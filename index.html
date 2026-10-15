@@ -1,0 +1,254 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Money Planner</title>
+<style>
+:root{--bg:#f7f5ff;--ink:#302d49;--purple:#7867d8;--pink:#ffe8f0;--blue:#e5f2ff;--green:#e1f7e9;--yellow:#fff3cf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial, sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#8a7be5,#e9a8ce);color:white;padding:30px 18px;text-align:center}
+header h1{margin:0 0 8px;font-size:clamp(26px,5vw,38px)}
+header p{margin:0}
+main{max-width:950px;margin:24px auto;padding:0 14px 40px}
+.card{background:white;border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px #302d4910}
+h2{font-size:20px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+label{display:block;font-size:14px;font-weight:bold;margin-bottom:7px}
+input,select,textarea{font:inherit;color:var(--ink);width:100%;min-width:0;border:1px solid #ddd8ed;border-radius:10px;padding:11px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid #b5a9ff;border-color:var(--purple)}
+.budget{border-radius:15px;padding:16px;margin:10px 0}
+.needs{background:var(--blue)}.savings{background:var(--green)}.wants{background:var(--pink)}
+.budget-title{display:flex;justify-content:space-between;gap:10px;font-weight:bold;margin-bottom:10px}
+.budget input{margin-top:9px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+.stat{padding:15px;border-radius:14px;background:#f1edff}
+.stat small{display:block;margin-bottom:7px}
+.stat strong{font-size:20px;overflow-wrap:anywhere}
+button{border:0;border-radius:10px;padding:12px 16px;font-weight:bold;font-size:14px;cursor:pointer}
+button:focus-visible{outline:3px solid #7867d8;outline-offset:2px}
+.primary{background:var(--purple);color:white}.secondary{background:#eeeafd;color:#43377f}
+.danger{background:#ffe7e7;color:#9b3535}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.expense-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin:10px 0;align-items:center}
+.expense-row button{padding:10px}
+.muted{color:#77738a;font-size:13px}
+.message{margin-top:12px;font-size:14px}
+@media(max-width:580px){.expense-row{grid-template-columns:1fr 1fr}.expense-row input:first-child{grid-column:1/-1}.expense-row select{grid-column:1/2}}
+@media print{body{background:white}header{padding:15px}.card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.no-print{display:none!important}main{margin:0 auto}.expense-row{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+<h1>Student Money Planner</h1>
+<p>Plan your money. Build better habits. 💜</p>
+</header>
+<main>
+<section class="card">
+<h2>👋 About You</h2>
+<div class="grid">
+<div><label for="student">Student name</label><input id="student" placeholder="Enter your name"></div>
+<div><label for="grade">Grade and section</label><input id="grade" placeholder="e.g. Grade 12 - ABM"></div>
+<div><label for="period">Budget period</label><select id="period"><option>Weekly</option><option>Monthly</option><option>Daily</option></select></div>
+<div><label for="date">Date</label><input id="date" type="date"></div>
+</div>
+</section>
+
+<section class="card">
+<h2>💰 Your Income</h2>
+<div id="incomeRows"></div>
+<div class="actions no-print"><button class="secondary" id="addIncome">+ Add income source</button></div>
+</section>
+
+<section class="card">
+<h2>🎯 Plan Your Budget</h2>
+<p class="muted">Recommended allocation: 70% needs, 20% savings, and 10% wants. You can adjust the percentages.</p>
+<div class="budget needs">
+<div class="budget-title"><span>🩵 NEEDS</span><span id="needsTotal">₱0.00</span></div>
+<label for="needsPct">Budget percentage (%)</label><input id="needsPct" type="number" min="0" max="100" value="70">
+<div id="needsRows"></div>
+<button class="secondary no-print" data-add="needs">+ Add need</button>
+</div>
+<div class="budget savings">
+<div class="budget-title"><span>💚 SAVINGS</span><span id="savingsTotal">₱0.00</span></div>
+<label for="savingsPct">Budget percentage (%)</label><input id="savingsPct" type="number" min="0" max="100" value="20">
+<div id="savingsRows"></div>
+<button class="secondary no-print" data-add="savings">+ Add savings goal</button>
+</div>
+<div class="budget wants">
+<div class="budget-title"><span>🩷 WANTS</span><span id="wantsTotal">₱0.00</span></div>
+<label for="wantsPct">Budget percentage (%)</label><input id="wantsPct" type="number" min="0" max="100" value="10">
+<div id="wantsRows"></div>
+<button class="secondary no-print" data-add="wants">+ Add want</button>
+</div>
+<p id="pctMessage" class="message" aria-live="polite"></p>
+</section>
+
+<section class="card">
+<h2>🧾 Expense Tracker</h2>
+<div class="grid">
+<div><label for="expenseDate">Expense date</label><input id="expenseDate" type="date"></div>
+<div><label for="expenseName">What did you spend on?</label><input id="expenseName" placeholder="e.g. Lunch"></div>
+<div><label for="expenseAmount">Amount (₱)</label><input id="expenseAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+<div><label for="expenseCategory">Category</label><select id="expenseCategory"><option>Needs</option><option>Savings</option><option>Wants</option><option>Other</option></select></div>
+</div>
+<div class="actions no-print"><button class="primary" id="addExpense">+ Add expense</button></div>
+<div id="expenseList"></div>
+<p id="emptyExpenses" class="muted">No expenses added yet.</p>
+</section>
+
+<section class="card">
+<h2>📊 Budget Summary</h2>
+<div class="stats">
+<div class="stat"><small>Total income</small><strong id="totalIncome">₱0.00</strong></div>
+<div class="stat"><small>Planned budget</small><strong id="totalPlanned">₱0.00</strong></div>
+<div class="stat"><small>Actual expenses</small><strong id="totalSpent">₱0.00</strong></div>
+<div class="stat"><small>Money remaining</small><strong id="remaining">₱0.00</strong></div>
+</div>
+<p id="summaryMessage" class="message" aria-live="polite"></p>
+</section>
+
+<section class="card">
+<h2>💭 Weekly Reflection</h2>
+<label for="reflection">What did you learn about managing your money?</label>
+<textarea id="reflection" rows="4" placeholder="Write your reflection here..."></textarea>
+</section>
+
+<section class="card">
+<h2>💾 Save Your Plan</h2>
+<p class="muted">Save a draft in this browser, or print your planner and choose Save as PDF.</p>
+<div class="actions no-print">
+<button class="primary" id="saveButton">Save plan</button>
+<button class="secondary" id="pdfButton">Save as PDF / Print</button>
+<button class="danger" id="clearButton">Clear plan</button>
+</div>
+<p id="saveMessage" class="message" aria-live="polite"></p>
+</section>
+</main>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+let nextId = 1;
+let incomes = [{id:nextId++,name:'Allowance',amount:0},{id:nextId++,name:'Other income',amount:0}];
+let budgets = {
+ needs:{pct:70,rows:[{id:nextId++,name:'Food',amount:0},{id:nextId++,name:'Transportation',amount:0},{id:nextId++,name:'School supplies',amount:0}]},
+ savings:{pct:20,rows:[{id:nextId++,name:'Emergency savings',amount:0}]},
+ wants:{pct:10,rows:[{id:nextId++,name:'Snacks / hobbies',amount:0}]}
+};
+let expenses = [];
+const money = n => Number.isFinite(Number(n)) ? Math.max(0,Number(n)) : 0;
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const totalIncome = () => incomes.reduce((s,x)=>s+money(x.amount),0);
+const planned = () => Object.values(budgets).reduce((s,b)=>s+b.rows.reduce((a,x)=>a+money(x.amount),0),0);
+const spent = () => expenses.reduce((s,x)=>s+money(x.amount),0);
+function renderIncome(){
+ $('incomeRows').innerHTML = incomes.map(x=>`<div class="expense-row" data-income="${x.id}">
+ <input aria-label="Income source" data-iname="${x.id}" value="${esc(x.name)}" placeholder="Income source">
+ <input aria-label="Income amount" data-iamount="${x.id}" type="number" min="0" step="0.01" value="${money(x.amount)}" placeholder="Amount">
+ <span></span><button class="danger no-print" data-rincome="${x.id}" aria-label="Remove income">×</button></div>`).join('');
+}
+function renderBudgets(){
+ for(const key of Object.keys(budgets)){
+ const b=budgets[key];
+ $(key+'Rows').innerHTML=b.rows.map(x=>`<div class="expense-row" data-budget="${key}" data-row="${x.id}">
+ <input aria-label="${key} item name" data-bname="${key}:${x.id}" value="${esc(x.name)}" placeholder="Item name">
+ <input aria-label="${key} planned amount" data-bamount="${key}:${x.id}" type="number" min="0" step="0.01" value="${money(x.amount)}" placeholder="Amount">
+ <span></span><button class="danger no-print" data-rbudget="${key}:${x.id}" aria-label="Remove item">×</button></div>`).join('');
+ $(key+'Pct').value=b.pct;
+ }
+}
+function renderExpenses(){
+ $('expenseList').innerHTML=expenses.map(x=>`<div class="expense-row">
+ <div><strong>${esc(x.name)}</strong><div class="muted">${esc(x.date)} · ${esc(x.category)}</div></div>
+ <strong>${peso(x.amount)}</strong><span></span>
+ <button class="danger no-print" data-rexpense="${x.id}" aria-label="Remove expense">×</button>
+ </div>`).join('');
+ $('emptyExpenses').hidden=expenses.length>0;
+}
+function update(){
+ const income=totalIncome(),spentAmount=spent(),left=income-spentAmount;
+ $('totalIncome').textContent=peso(income);
+ $('totalPlanned').textContent=peso(planned());
+ $('totalSpent').textContent=peso(spentAmount);
+ $('remaining').textContent=peso(left);
+ $('remaining').style.color=left<0?'#c43b42':'#16803c';
+ for(const key of Object.keys(budgets)){
+ const amount=budgets[key].rows.reduce((s,x)=>s+money(x.amount),0);
+ $(key+'Total').textContent=peso(amount);
+ }
+ const pct=['needs','savings','wants'].reduce((s,k)=>s+money(budgets[k].pct),0);
+ $('pctMessage').textContent=pct===100?'Your percentages add up correctly.':'Adjust your percentages so the total is 100%. Current total: '+pct+'%.';
+ $('summaryMessage').textContent=income===0?'Add your income to get started.':left<0?'Warning: your expenses are greater than your income.':'You have '+peso(left)+' remaining.';
+}
+function save(showMessage=true){
+ try{
+ const data={student:$('student').value,grade:$('grade').value,period:$('period').value,date:$('date').value,incomes,budgets,expenses,reflection:$('reflection').value};
+ localStorage.setItem('student-money-planner',JSON.stringify(data));
+ if(showMessage)$('saveMessage').textContent='Plan saved in this browser.';
+ }catch(e){$('saveMessage').textContent='Could not save in this browser.';}
+}
+function load(){
+ try{
+ const raw=localStorage.getItem('student-money-planner');if(!raw)return;
+ const d=JSON.parse(raw);
+ $('student').value=d.student||'';$('grade').value=d.grade||'';$('period').value=d.period||'Weekly';$('date').value=d.date||'';
+ if(Array.isArray(d.incomes))incomes=d.incomes;
+ if(d.budgets)budgets=d.budgets;
+ if(Array.isArray(d.expenses))expenses=d.expenses;
+ $('reflection').value=d.reflection||'';
+ nextId=Math.max(nextId,...incomes.map(x=>Number(x.id)||0),...expenses.map(x=>Number(x.id)||0),...Object.values(budgets).flatMap(b=>b.rows.map(x=>Number(x.id)||0)))+1;
+ }catch(e){}
+}
+$('date').value=new Date().toISOString().slice(0,10);
+$('expenseDate').value=new Date().toISOString().slice(0,10);
+$('addIncome').addEventListener('click',()=>{incomes.push({id:nextId++,name:'New income',amount:0});renderIncome();update();save(false);});
+$('incomeRows').addEventListener('input',e=>{
+ const n=e.target.dataset.iname,a=e.target.dataset.iamount;
+ if(n){const x=incomes.find(x=>x.id===Number(n));if(x)x.name=e.target.value;}
+ if(a){const x=incomes.find(x=>x.id===Number(a));if(x)x.amount=money(e.target.value);}
+ update();save(false);
+});
+$('incomeRows').addEventListener('click',e=>{const id=e.target.dataset.rincome;if(!id)return;incomes=incomes.filter(x=>x.id!==Number(id));renderIncome();update();save(false);});
+$('needsPct').addEventListener('input',e=>{budgets.needs.pct=money(e.target.value);update();save(false);});
+$('savingsPct').addEventListener('input',e=>{budgets.savings.pct=money(e.target.value);update();save(false);});
+$('wantsPct').addEventListener('input',e=>{budgets.wants.pct=money(e.target.value);update();save(false);});
+document.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
+ const key=btn.dataset.add;budgets[key].rows.push({id:nextId++,name:'New item',amount:0});renderBudgets();update();save(false);
+}));
+document.querySelector('.card:nth-of-type(3)').addEventListener('input',e=>{
+ const name=e.target.dataset.bname,amount=e.target.dataset.bamount;
+ if(name){const [k,id]=name.split(':');const x=budgets[k].rows.find(x=>x.id===Number(id));if(x)x.name=e.target.value;}
+ if(amount){const [k,id]=amount.split(':');const x=budgets[k].rows.find(x=>x.id===Number(id));if(x)x.amount=money(e.target.value);}
+ update();save(false);
+});
+document.querySelector('.card:nth-of-type(3)').addEventListener('click',e=>{
+ const value=e.target.dataset.rbudget;if(!value)return;
+ const [k,id]=value.split(':');budgets[k].rows=budgets[k].rows.filter(x=>x.id!==Number(id));renderBudgets();update();save(false);
+});
+$('addExpense').addEventListener('click',()=>{
+ const name=$('expenseName').value.trim(),amount=Number($('expenseAmount').value);
+ if(!name){$('expenseName').focus();return;}
+ if(!Number.isFinite(amount)||amount<=0){$('expenseAmount').focus();return;}
+ expenses.unshift({id:nextId++,name,amount,date:$('expenseDate').value||new Date().toISOString().slice(0,10),category:$('expenseCategory').value});
+ $('expenseName').value='';$('expenseAmount').value='';renderExpenses();update();save(false);
+});
+$('expenseList').addEventListener('click',e=>{
+ const id=e.target.dataset.rexpense;if(!id)return;
+ expenses=expenses.filter(x=>x.id!==Number(id));renderExpenses();update();save(false);
+});
+$('saveButton').addEventListener('click',()=>save(true));
+$('pdfButton').addEventListener('click',()=>window.print());
+$('clearButton').addEventListener('click',()=>{
+ if(!confirm('Clear your saved budget and start again?'))return;
+ localStorage.removeItem('student-money-planner');location.reload();
+});
+['student','grade','period','date','reflection'].forEach(id=>$(id).addEventListener('input',()=>save(false)));
+load();renderIncome();renderBudgets();renderExpenses();update();
+})();
+</script>
+</body>
+</html>
